@@ -1,1 +1,7 @@
-# etpm
+Cloud services have been an important part of human society. When users process sensitive data on the cloud, they implicitly trust a multitude of entities including the developers and operators of the underlying hardware, OSes/VMMs, storage and database systems, and identity and access management services. They also trust the employees of the cloud service provider (CSP) who have physical access to the infrastructure. 
+
+However, current vTPM implementations, which serves as root-of-trust for virtual machines in cloud platform, are prone to confidential data leakage with the compromised CSP. The on-cloud attacker can steal the sensitive data stored in vTPM after destruction of the security guarantees of CSP. In this work, we proposed solution combined with vTPM and TEE technologies to protect the user-sensitive data in vTPM. Insider attacks exploiting vulnerabilities in the cloud are out of scope.
+
+TEEs provide hardware-based isolation for user code and data even given malicious privileged software and physical attacks. TEEs provide a hardware root of trust, allowing users to access cloud compute resources without trusting provider software including the privileged software of the hypervisor and operating system. TEE hardware protects the privacy and integrity of user code and data from administrators and from attackers who control privileged software. Tenants can reestablish the root of trust with the help of eTPM, vTPM enhanced by TEE.
+
+[INSTALL & BUILD.md](docs/BUILD.md) for information on installation, deployment and more.
