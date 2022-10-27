@@ -1,0 +1,66 @@
+FROM docker.io/occlum/occlum:0.27.3-ubuntu20.04
+
+RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list &&\
+	apt update &&\
+	apt install -y \
+	autoconf-archive \
+	libcmocka0 \
+	libcmocka-dev \
+	procps \
+	iproute2 \
+	build-essential \
+	git \
+	pkg-config \
+	gcc \
+	libtool \
+	automake \
+	libssl-dev \
+	uthash-dev \
+	autoconf \
+	doxygen \
+	libjson-c-dev \
+	libini-config-dev \
+	libcurl4-openssl-dev \
+	libltdl-dev \
+	python-yaml \
+	libglib2.0-dev \
+	dbus \
+	net-tools \
+	iputils-ping
+
+RUN echo "Editting the /etc/sgx_default_qcnl.conf to use the Rats-TLS"  &&\
+	sed -i '2,2s/localhost:8081/sgx-dcap-server.cn-beijing.aliyuncs.com/g' /etc/sgx_default_qcnl.conf &&\
+	sed -i '5,5s/#//' /etc/sgx_default_qcnl.conf &&\
+	sed -i '5,5s/FALSE/TRUE/g' /etc/sgx_default_qcnl.conf
+
+RUN echo "Downloading ms-tpm2-ref tpm2-tss tpm2-ambrd tpm2-tools" && \
+	git clone https://github.com/inclavare-containers/rats-tls.git &&\
+	git clone https://github.com/tpm2-software/tpm2-tss.git &&\
+	git clone -b 2.4.1 https://github.com/tpm2-software/tpm2-abrmd.git &&\
+	git clone https://github.com/tpm2-software/tpm2-tools.git
+
+COPY tss2/config /root/.cargo/config
+WORKDIR /root/rats-tls
+RUN cmake -DBUILD_SAMPLES=on -H. -Bbuild &&\
+	make -C build install &&\
+	cp /usr/local/include/rats-tls/rats-tls/* /usr/local/include/rats-tls/ &&\
+	echo "/usr/local/lib/rats-tls" >> /etc/ld.so.conf  &&\
+	ldconfig -v | grep rats
+
+COPY tss2/tcti-mssim.c /root/tpm2-tss/src/tss2-tcti/tcti-mssim.c 
+COPY tss2/tcti-mssim.h /root/tpm2-tss/src/tss2-tcti/tcti-mssim.h
+COPY tss2/io.c /root/tpm2-tss/src/util/io.c
+COPY tss2/io.h /root/tpm2-tss/src/util/io.h
+COPY tss2/tss_configure.ac /root/tpm2-tss/configure.ac
+COPY tss2/tss_Makefile.am /root/tpm2-tss/Makefile.am
+COPY tss2/helpers.sh /root/tpm2-tools/test/integration/helpers.sh
+WORKDIR /root/tpm2-tss
+RUN ./bootstrap && ./configure --enable-rats-tls-enhanced --enable-tcti-mssim --disable-tcti-device --disable-tcti-swtpm --disable-tcti-pcap && make -j$(nproc) install
+
+WORKDIR /root/tpm2-abrmd
+RUN ./bootstrap && ./configure && make -j$(nproc) install
+
+WORKDIR /root/tpm2-tools
+RUN ./bootstrap && ./configure && make -j$(nproc) install &&\
+	cp /usr/bin/ls tpm_server &&\
+	./configure --enable-unit --enable-integration PATH=$PATH:/root/tpm2-tools

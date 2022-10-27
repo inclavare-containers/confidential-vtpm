@@ -1,0 +1,55 @@
+FROM docker.io/occlum/occlum:0.27.3-ubuntu20.04
+
+RUN apt update &&\
+	apt install -y autoconf-archive \
+	libcmocka0 \
+	libcmocka-dev \
+	procps \
+	iproute2 \
+	build-essential \
+	git \
+	pkg-config \
+	gcc \
+	libtool \
+	automake \
+	libssl-dev \
+	uthash-dev \
+	autoconf \
+	doxygen \
+	libjson-c-dev \
+	libini-config-dev \
+	libcurl4-openssl-dev \
+	libltdl-dev
+
+RUN echo "Editting the /etc/sgx_default_qcnl.conf to use the Rats-TLS"  &&\
+		sed -i '2,2s/localhost:8081/sgx-dcap-server.cn-beijing.aliyuncs.com/g' /etc/sgx_default_qcnl.conf &&\
+		sed -i '5,5s/#//' /etc/sgx_default_qcnl.conf &&\
+		sed -i '5,5s/FALSE/TRUE/g' /etc/sgx_default_qcnl.conf
+
+RUN git clone https://github.com/microsoft/ms-tpm-20-ref.git &&\
+		git clone https://github.com/inclavare-containers/rats-tls.git
+
+WORKDIR /root/rats-tls
+RUN cmake -DRATS_TLS_BUILD_MODE="occlum" -DBUILD_SAMPLES=on -H. -Bbuild &&\
+		make -C build install &&\
+		cp /usr/local/include/rats-tls/rats-tls/* /usr/local/include/rats-tls/
+
+COPY etpm/TcpServer.c /root/ms-tpm-20-ref/TPMCmd/Simulator/src/TcpServer.c 
+COPY etpm/Simulator_fp.h /root/ms-tpm-20-ref/TPMCmd/Simulator/include/prototypes/Simulator_fp.h 
+COPY etpm/etpm_configure.ac /root/ms-tpm-20-ref/TPMCmd/configure.ac
+COPY etpm/etpm_Makefile.am /root/ms-tpm-20-ref/TPMCmd/Makefile.am
+
+WORKDIR /root/ms-tpm-20-ref/TPMCmd
+RUN ./bootstrap && ./configure --enable-rats-tls-enhanced && make -j$(nproc)
+
+WORKDIR /root/ms-tpm-20-ref/TPMCmd/Simulator/src
+RUN occlum init &&\
+	cp /lib/x86_64-linux-gnu/libdl.so.2 image/opt/occlum/glibc/lib &&\
+	cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 image/opt/occlum/glibc/lib &&\
+	cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 image/opt/occlum/glibc/lib &&\
+	cp /lib/x86_64-linux-gnu/libpthread.so.0 image/opt/occlum/glibc/lib &&\
+	cp /usr/local/lib/rats-tls/librats_tls.so.0 image/opt/occlum/glibc/lib/librats_tls.so.0 &&\
+	cp tpm2-simulator image/bin &&\
+	mkdir -p image/usr/local/lib &&\
+	cp -rf /usr/local/lib/rats-tls image/usr/local/lib &&\
+	occlum build
