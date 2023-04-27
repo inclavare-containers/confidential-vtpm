@@ -1,0 +1,56 @@
+diff --git a/acs/server.c b/acs/server.c
+index 25f54f4..0daba45 100644
+--- a/acs/server.c
++++ b/acs/server.c
+@@ -5325,24 +5325,29 @@ static uint32_t validateEkCertificate(TPMT_PUBLIC *ekPub,	/* output */
+     for (i = 0 ; i < MAX_ROOTS ; i++) {
+ 	rootFilename[i] = NULL;    				/* for free @1 */
+     }
+-    /* get a list of TPM vendor EK root certificates */
+-    if (rc == 0) {
+-	rc = getRootCertificateFilenames(rootFilename,		/* freed @1 */
+-					 &rootFileCount,
+-					 listFilename,
+-					 vverbose);
+-    }
+-    if (rc == 0) {
+-	if (vverbose)
+-	    printf("validateEkCertificate: Validate the client EK certificate against the root\n");
+-    }
++
++	//TODO : add  ca pubkey in listFilename ,which enable	verifyCertificate
++	//       in order to enrollment Self-signed certificate tpm. Remove it temporarily
++
++
++    ///* get a list of TPM vendor EK root certificates */
++    // if (rc == 0) {
++	// rc = getRootCertificateFilenames(rootFilename,		/* freed @1 */
++	// 				 &rootFileCount,
++	// 				 listFilename,
++	// 				 vverbose);
++    // }
++    // if (rc == 0) {
++	// if (vverbose)
++	//     printf("validateEkCertificate: Validate the client EK certificate against the root\n");
++    // }
+     /* validate the EK certificate against the root */
+-    if (rc == 0) {
+-	rc = verifyCertificate(*ekX509Certificate,
+-			       (const char **)rootFilename,
+-			       rootFileCount,
+-			       vverbose);
+-    }
++    // if (rc == 0) {
++	// rc = verifyCertificate(*ekX509Certificate,
++	// 		       (const char **)rootFilename,
++	// 		       rootFileCount,
++	// 		       vverbose);
++    // }
+     /*
+       construct the TPMT_PUBLIC for the EK public key
+     */
+@@ -6167,3 +6172,4 @@ static void printUsage(void)
+ #endif
+     exit(1);	
+ }
++
