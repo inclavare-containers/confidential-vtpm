@@ -1,0 +1,42 @@
+From 576393909b9c2fd3e05ab941fa20efb186c22906 Mon Sep 17 00:00:00 2001
+From: zy <48793440@qq.com>
+Date: Mon, 15 May 2023 14:44:28 +0800
+Subject: [PATCH] del ek cert verify
+
+Signed-off-by: zy <48793440@qq.com>
+---
+ acs/server.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/acs/server.c b/acs/server.c
+index 25f54f4..655fcb7 100644
+--- a/acs/server.c
++++ b/acs/server.c
+@@ -5325,24 +5325,6 @@ static uint32_t validateEkCertificate(TPMT_PUBLIC *ekPub,	/* output */
+     for (i = 0 ; i < MAX_ROOTS ; i++) {
+ 	rootFilename[i] = NULL;    				/* for free @1 */
+     }
+-    /* get a list of TPM vendor EK root certificates */
+-    if (rc == 0) {
+-	rc = getRootCertificateFilenames(rootFilename,		/* freed @1 */
+-					 &rootFileCount,
+-					 listFilename,
+-					 vverbose);
+-    }
+-    if (rc == 0) {
+-	if (vverbose)
+-	    printf("validateEkCertificate: Validate the client EK certificate against the root\n");
+-    }
+-    /* validate the EK certificate against the root */
+-    if (rc == 0) {
+-	rc = verifyCertificate(*ekX509Certificate,
+-			       (const char **)rootFilename,
+-			       rootFileCount,
+-			       vverbose);
+-    }
+     /*
+       construct the TPMT_PUBLIC for the EK public key
+     */
+-- 
+2.32.1 (Apple Git-133)
+
