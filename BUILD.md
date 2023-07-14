@@ -17,13 +17,10 @@ docker run -d -p 2323:2323 -it acs:0.1 bash /root/startup.sh >/dev/null 2>&1
 
 Step.3 TPM Backend
 ```sh
-bash scripts/backend/backend.sh
+cd  scripts/backend && bash build.sh
 ```
 
-If you see the following message, it means that attestation has been completed:
-```sh
-INFO: validateCertificate: AK certificate verified against the PCA root
-```
+
 
 Step.4 TPM Frontend
 ```sh

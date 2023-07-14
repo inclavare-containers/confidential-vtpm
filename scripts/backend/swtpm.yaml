@@ -1,0 +1,21 @@
+includes:
+  - base.yaml
+targets:
+  - target: /bin
+    copy:
+      - files:
+        - /usr/bin/swtpm
+
+  - target: /opt/occlum/glibc/lib
+    copy:
+      - files:
+        - /usr/lib/swtpm/libswtpm_libtpms.so.0 
+        - /lib/x86_64-linux-gnu/libfuse.so.2
+        - /lib/x86_64-linux-gnu/libglib-2.0.so.0 
+        - /lib/libtpms.so.0
+        - /lib/x86_64-linux-gnu/libpthread.so.0 
+        - /lib/x86_64-linux-gnu/libc.so.6
+        - /lib/x86_64-linux-gnu/libcrypto.so.1.1 
+        - /lib/x86_64-linux-gnu/libdl.so.2 
+        - /lib/x86_64-linux-gnu/libpcre.so.3 
+        - /lib64/ld-linux-x86-64.so.2 
