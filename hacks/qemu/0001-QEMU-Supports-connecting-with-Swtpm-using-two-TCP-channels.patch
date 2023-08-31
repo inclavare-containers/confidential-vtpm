@@ -1,0 +1,101 @@
+From cd0040a2b1caa248590f034bdf38206f6e7080e6 Mon Sep 17 00:00:00 2001
+From: fengyuanyu1 <yufengyuan@nudt.edu.cn>
+Date: Wed, 17 May 2023 17:52:47 +0800
+Subject: [PATCH] QEMU: Supports connection with swtpm using two TCP channels
+
+QEMU supports connection with swtpm via the device node and socket. First, 
+it establishes the contrl channel with the swtpm, and transmits the msgfds
+to the swtpm. swtpm set its data channel based on the information of msgfds.
+
+But, the way of establishing the connection using the msgfds is limited in 
+the UNIX_DOMAIN socket. It can not trasmit the msgfds via TCP.
+
+This patch targets to enhance the QEMU with the ability of connecting with 
+swtpm using two TCP channels.
+
+Signed-off-by: fengyuanyu1 <yufengyuan@nudt.edu.cn>
+---
+ backends/tpm/tpm_emulator.c | 23 ++++++++++++++++++++++-
+ qapi/tpm.json               |  2 +-
+ qemu-options.hx             |  4 ++--
+ 3 files changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/backends/tpm/tpm_emulator.c b/backends/tpm/tpm_emulator.c
+index 87d061e9bb..323d587007 100644
+--- a/backends/tpm/tpm_emulator.c
++++ b/backends/tpm/tpm_emulator.c
+@@ -42,6 +42,7 @@
+ #include "qapi/clone-visitor.h"
+ #include "qapi/qapi-visit-tpm.h"
+ #include "chardev/char-fe.h"
++#include "chardev/char-socket.h"
+ #include "trace.h"
+ #include "qom/object.h"
+ 
+@@ -568,7 +569,27 @@ static int tpm_emulator_handle_device_opts(TPMEmulator *tpm_emu, QemuOpts *opts)
+ 
+     tpm_emu->options->chardev = g_strdup(value);
+ 
+-    if (tpm_emulator_prepare_data_fd(tpm_emu) < 0) {
++    value = qemu_opt_get(opts, "datachardev");
++    if(value) {
++        
++        dev = qemu_chr_find(value);
++        if (!dev) {
++            error_report("tpm-emulator: tpm datachardev '%s' not found", value);
++            goto err;
++        }
++
++        if (!qemu_chr_fe_init(&tpm_emu->data_chr, dev, &err)) {
++            error_prepend(&err, "tpm-emulator: No valid chardev (datachardev) found at '%s':",
++                        value);
++            error_report_err(err);
++            goto err;
++        }
++
++        tpm_emu->options->datachardev = g_strdup(value);
++
++        tpm_emu->data_ioc = (SOCKET_CHARDEV(((Chardev*)(&tpm_emu->data_chr)->chr)))->ioc;
++
++    } else if (tpm_emulator_prepare_data_fd(tpm_emu) < 0) {
+         goto err;
+     }
+ 
+diff --git a/qapi/tpm.json b/qapi/tpm.json
+index 4e2ea9756a..9c27449990 100644
+--- a/qapi/tpm.json
++++ b/qapi/tpm.json
+@@ -96,7 +96,7 @@
+ #
+ # Since: 2.11
+ ##
+-{ 'struct': 'TPMEmulatorOptions', 'data': { 'chardev' : 'str' },
++{ 'struct': 'TPMEmulatorOptions', 'data': { 'chardev' : 'str' , 'datachardev' : 'str'},
+   'if': 'CONFIG_TPM' }
+ 
+ ##
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 34e9b32a5c..6773f844e9 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -3602,7 +3602,7 @@ DEF("tpmdev", HAS_ARG, QEMU_OPTION_tpmdev, \
+     "                use path to provide path to a character device; default is /dev/tpm0\n"
+     "                use cancel-path to provide path to TPM's cancel sysfs entry; if\n"
+     "                not provided it will be searched for in /sys/class/misc/tpm?/device\n"
+-    "-tpmdev emulator,id=id,chardev=dev\n"
++    "-tpmdev emulator,id=id,chardev=dev[,datachardev=datadev]\n"
+     "                configure the TPM device using chardev backend\n",
+     QEMU_ARCH_ALL)
+ SRST
+@@ -3655,7 +3655,7 @@ The available backends are:
+     Note that the ``-tpmdev`` id is ``tpm0`` and is referenced by
+     ``tpmdev=tpm0`` in the device option.
+ 
+-``-tpmdev emulator,id=id,chardev=dev``
++``-tpmdev emulator,id=id,chardev=dev[,datachardev=datadev]``
+     (Linux-host only) Enable access to a TPM emulator using Unix domain
+     socket based chardev backend.
+ 
+-- 
+2.31.1
+
