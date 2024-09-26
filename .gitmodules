@@ -10,3 +10,12 @@
 [submodule "qemu"]
 	path = qemu
 	url = https://github.com/qemu/qemu.git
+[submodule "third_party/linux-5.4.0"]
+	path = third_party/linux-5.4.0
+	url = https://github.com/lightcheen/linux-5.4.0.git
+[submodule "third_party/qemu-8.0.3"]
+	path = third_party/qemu-8.0.3
+	url = https://github.com/lightcheen/qemu-8.0.3.git
+[submodule "third_party/edk2"]
+	path = third_party/edk2
+	url = https://github.com/lightcheen/edk2.git
