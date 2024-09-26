@@ -1,15 +1,12 @@
 [submodule "acs"]
-	path = acs
+	path = third_party/acs
 	url = https://github.com/kgoldman/acs.git
 [submodule "libtpms"]
-	path = libtpms
+	path = third_party/libtpms
 	url = https://github.com/stefanberger/libtpms.git
 [submodule "swtpm"]
-	path = swtpm
+	path = third_party/swtpm
 	url = https://github.com/stefanberger/swtpm.git
-[submodule "qemu"]
-	path = qemu
-	url = https://github.com/qemu/qemu.git
 [submodule "third_party/linux-5.4.0"]
 	path = third_party/linux-5.4.0
 	url = https://github.com/lightcheen/linux-5.4.0.git
